@@ -61,15 +61,22 @@ end
 
 function M.open_chat_buffer()
   local bufnr = M.get_chat_bufnr()
+  local opts = config.get()
+
   if bufnr then
     local win = vim.fn.bufwinid(bufnr)
     if win ~= -1 then
       vim.api.nvim_set_current_win(win)
     else
+      -- Buffer exists but isn't shown anywhere: open it in a new split
+      -- below the current window rather than replacing it.
+      vim.cmd("belowright " .. opts.chat.window_height .. "split")
       vim.api.nvim_set_current_buf(bufnr)
     end
     return bufnr
   end
+
+  vim.cmd("belowright " .. opts.chat.window_height .. "split")
 
   bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_name(bufnr, BUFFER_NAME)
@@ -78,7 +85,6 @@ function M.open_chat_buffer()
   vim.bo[bufnr].swapfile = false
   vim.bo[bufnr].filetype = "vimchat"
 
-  local opts = config.get()
   vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {
     ">>> system",
     "",

@@ -34,6 +34,7 @@ Configure via |vim.g.vim_chat| in your init.lua: >lua
       keymaps = true,
       chat = {
         system_prompt = "You are an expert pair programmer...",
+        window_height = 15,
       },
       completion = {
         enabled = true,

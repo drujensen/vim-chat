@@ -50,6 +50,7 @@ vim.g.vim_chat = {
 
   chat = {
     system_prompt = "You are an expert pair programmer. Answer coding questions clearly and concisely. Use code blocks for code.",
+    window_height = 15, -- height of the split the chat buffer opens in
   },
 
   completion = {
