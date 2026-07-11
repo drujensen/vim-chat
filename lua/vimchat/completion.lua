@@ -192,6 +192,12 @@ local function on_activity(bufnr)
   end, debounce_ms)
 end
 
+function M.has_suggestion()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local st = get_state(bufnr)
+  return st.extmark_id ~= nil and st.suggestion ~= nil
+end
+
 -- Accepts the currently displayed suggestion (if any) by inserting it as
 -- real buffer text. Returns true if a suggestion was accepted.
 function M.accept()
@@ -254,12 +260,18 @@ function M.setup()
     end,
   })
 
+  -- Deliberately NOT an expr-mapping: expr-mapping callbacks run under
+  -- textlock and can't mutate the buffer (that's E565). A plain callback
+  -- mapping executes as the mapping's action itself, so accept() can call
+  -- the buffer-mutating API directly.
   vim.keymap.set("i", "<Tab>", function()
-    if M.accept() then
-      return ""
+    if not M.accept() then
+      -- No suggestion: fall through to Neovim's normal <Tab> behavior
+      -- (respects 'expandtab'/'softtabstop'). noremap avoids recursing
+      -- back into this same mapping.
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Tab>", true, false, true), "n", true)
     end
-    return "\t"
-  end, { expr = true, silent = true, desc = "vim-chat: accept ghost-text suggestion" })
+  end, { silent = true, desc = "vim-chat: accept ghost-text suggestion" })
 end
 
 return M
