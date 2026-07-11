@@ -96,7 +96,11 @@ end
 
 function M.stop()
   if job then
-    job:kill(15)
+    -- kill() can throw (e.g. the process already exited in a race); never
+    -- let that escape uncaught and leave `job` stuck non-nil.
+    pcall(function()
+      job:kill(15)
+    end)
     job = nil
     vim.notify("vim-chat: request cancelled", vim.log.levels.INFO)
   end
@@ -147,10 +151,21 @@ end
 -- Entry point for :VimChat [prompt]. With a prompt, seeds/continues the
 -- buffer with that text and sends immediately. Without one, just opens
 -- the buffer (or sends whatever the user already typed, for "continue").
-function M.chat(prompt)
+-- `selection` (optional) is { text=, filetype= } captured from a visual-mode
+-- range (e.g. `,a`/`,c` after selecting lines) and is inserted as a fenced
+-- code block ahead of the prompt.
+function M.chat(prompt, selection)
   local bufnr = M.open_chat_buffer()
+  local parts = {}
+  if selection and selection.text ~= "" then
+    local lang = (selection.filetype and selection.filetype ~= "") and selection.filetype or ""
+    table.insert(parts, "```" .. lang .. "\n" .. selection.text .. "\n```")
+  end
   if prompt and prompt ~= "" then
-    buf_append(bufnr, prompt)
+    table.insert(parts, prompt)
+  end
+  if #parts > 0 then
+    buf_append(bufnr, table.concat(parts, "\n\n"))
   end
   M.send_message()
 end

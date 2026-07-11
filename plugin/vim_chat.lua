@@ -8,8 +8,17 @@ vim.g.loaded_vim_chat = true
 require("vimchat.completion").setup()
 
 vim.api.nvim_create_user_command("VimChat", function(cmd_opts)
-  require("vimchat").chat(cmd_opts.args)
-end, { nargs = "*", desc = "Open/continue the vim-chat chat buffer, optionally seeding a prompt" })
+  local selection = nil
+  if cmd_opts.range > 0 then
+    local lines = vim.api.nvim_buf_get_lines(0, cmd_opts.line1 - 1, cmd_opts.line2, false)
+    selection = { text = table.concat(lines, "\n"), filetype = vim.bo.filetype }
+  end
+  require("vimchat").chat(cmd_opts.args, selection)
+end, {
+  nargs = "*",
+  range = true, -- accepts a visual-mode range (e.g. `,a` after selecting text); no default when omitted
+  desc = "Open/continue the vim-chat chat buffer, optionally seeding a prompt",
+})
 
 vim.api.nvim_create_user_command("VimChatStop", function()
   require("vimchat").stop()
