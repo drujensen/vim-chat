@@ -42,10 +42,14 @@ local function cancel_timer(bufnr)
   end
 end
 
--- Some models wrap completions in a markdown fence even when told not to.
+-- Some models wrap completions in a markdown fence even when told not to,
+-- and don't always close it cleanly (e.g. cut off mid-suggestion) -- so
+-- strip a leading/trailing fence marker independently rather than
+-- requiring a fully-matched ```lang ... ``` pair.
 local function strip_markdown_fence(text)
-  local fenced = text:match("^```[%w_+-]*\n(.-)\n?```$")
-  return fenced or text
+  text = text:gsub("^```[%w_+-]*\n?", "")
+  text = text:gsub("\n?```%s*$", "")
+  return text
 end
 
 -- Some models re-emit text that's already present immediately before the
@@ -147,15 +151,29 @@ local function request_completion(bufnr)
   local suffix = table.concat(after_lines, "\n")
 
   local filetype = vim.bo[bufnr].filetype
+  filetype = filetype ~= "" and filetype or "text"
   local user_content = string.format(
     "Filetype: %s\n\n--- code before cursor ---\n%s\n--- code after cursor ---\n%s",
-    filetype ~= "" and filetype or "text",
+    filetype,
     prefix,
     suffix
   )
 
+  -- Models tend to wrap completions in markdown fences out of habit
+  -- (regardless of instructions), especially when the filetype is only
+  -- mentioned in the user message. Naming it again here, in the system
+  -- prompt, and explaining *why* fences break things, measurably reduces
+  -- (though doesn't eliminate -- see strip_markdown_fence) that habit.
+  local system_prompt = opts.system_prompt
+    .. string.format(
+      " The buffer being edited has filetype '%s' -- treat it as a raw %s source file, not markdown or a chat transcript. Your output is inserted verbatim at the cursor, so it must contain nothing but raw %s source code: no markdown code fences, no formatting, no explanation.",
+      filetype,
+      filetype,
+      filetype
+    )
+
   local messages = {
-    { role = "system", content = opts.system_prompt },
+    { role = "system", content = system_prompt },
     { role = "user", content = user_content },
   }
 
