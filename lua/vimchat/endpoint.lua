@@ -39,11 +39,19 @@ function M.request(messages, on_delta, on_done, on_error, overrides)
     messages = messages,
   })
 
+  -- Bounds only the connect phase, not the whole streamed response (which can
+  -- legitimately run far longer than this for long answers/slow models).
+  -- Without it, an unreachable/firewalled host hangs curl indefinitely with
+  -- nothing to kill it -- common on restrictive Windows/corporate networks.
+  local connect_timeout_s = math.max(1, math.floor((opts.request_timeout_ms or 30000) / 1000))
+
   local args = {
     "curl",
     "-sS",
     "-N",
     "--no-buffer",
+    "--connect-timeout",
+    tostring(connect_timeout_s),
     "-X",
     "POST",
     opts.endpoint_url,

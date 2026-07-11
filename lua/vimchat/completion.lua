@@ -27,7 +27,12 @@ end
 local function cancel_job(bufnr)
   local st = get_state(bufnr)
   if st.job then
-    st.job:kill(15)
+    -- kill() can throw (e.g. the process already exited in a race). This
+    -- runs on every keystroke via on_activity(), so an uncaught error here
+    -- would fire on every keystroke too -- pcall it rather than risk that.
+    pcall(function()
+      st.job:kill(15)
+    end)
     st.job = nil
   end
 end
