@@ -26,13 +26,15 @@ end
 --- @param on_delta function(text) called for each streamed content fragment
 --- @param on_done function() called once the stream completes normally
 --- @param on_error function(message) called on failure
+--- @param overrides table|nil optional {model=, temperature=} to override config defaults (used by completion.lua to target a faster, non-reasoning model)
 --- @return vim.SystemObj job handle (call :kill() to cancel)
-function M.request(messages, on_delta, on_done, on_error)
+function M.request(messages, on_delta, on_done, on_error, overrides)
   local opts = config.get()
+  overrides = overrides or {}
 
   local body = vim.json.encode({
-    model = opts.model,
-    temperature = opts.temperature,
+    model = overrides.model or opts.model,
+    temperature = overrides.temperature or opts.temperature,
     stream = true,
     messages = messages,
   })

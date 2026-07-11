@@ -42,6 +42,22 @@ local function cancel_timer(bufnr)
   end
 end
 
+-- Some models wrap completions in a markdown fence even when told not to.
+local function strip_markdown_fence(text)
+  local fenced = text:match("^```[%w_+-]*\n(.-)\n?```$")
+  return fenced or text
+end
+
+-- Some models re-emit text that's already present immediately before the
+-- cursor instead of only the continuation; strip that duplicate overlap.
+local function trim_prefix_overlap(text, prefix)
+  local last_line = vim.trim(prefix:match("([^\n]*)$") or "")
+  if last_line ~= "" and text:sub(1, #last_line) == last_line then
+    return text:sub(#last_line + 1)
+  end
+  return text
+end
+
 local function should_complete(bufnr)
   local opts = config.get().completion
   if not opts.enabled then
@@ -151,10 +167,13 @@ local function request_completion(bufnr)
     accumulated = accumulated .. delta
   end, function()
     st.job = nil
-    show_suggestion(bufnr, accumulated)
-  end, function(_)
+    local suggestion = strip_markdown_fence(vim.trim(accumulated))
+    suggestion = trim_prefix_overlap(suggestion, prefix)
+    show_suggestion(bufnr, suggestion)
+  end, function(err)
     st.job = nil
-  end)
+    vim.notify(err, vim.log.levels.WARN)
+  end, { model = opts.model, temperature = opts.temperature })
 end
 
 local function on_activity(bufnr)

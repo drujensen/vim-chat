@@ -12,6 +12,13 @@ M.defaults = {
   },
   completion = {
     enabled = true,
+    -- Reasoning/"thinking" models (e.g. ornith, qwen3.6) stream several
+    -- seconds of chain-of-thought before any real content, which blows past
+    -- the debounce window and gets cancelled by the next keystroke. Ghost
+    -- text needs a fast, non-reasoning model -- override here if yours
+    -- differs from the default.
+    model = "qwen3-coder:30b",
+    temperature = 0.2,
     debounce_ms = 400,
     max_context_lines_before = 50,
     max_context_lines_after = 20,
