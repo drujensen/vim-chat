@@ -1,0 +1,75 @@
+*vim-chat.txt*    Pure-Lua AI chat + ghost-text completion for Neovim
+
+==============================================================================
+CONTENTS                                                    *vim-chat-contents*
+
+    1. Introduction ......... |vim-chat-introduction|
+    2. Configuration ........ |vim-chat-configuration|
+    3. Commands ............. |vim-chat-commands|
+    4. Keymaps .............. |vim-chat-keymaps|
+
+==============================================================================
+1. Introduction                                         *vim-chat-introduction*
+
+vim-chat is a pure-Lua Neovim plugin providing:
+
+  - A streaming chat buffer, using `>>> user` / `<<< assistant` markers,
+    talking to any OpenAI-compatible `/v1/chat/completions` endpoint.
+  - Copilot-style inline ghost-text completion, rendered with extmark virtual
+    text and accepted with <Tab>.
+
+No Python dependency, no `.ini` role system -- one configurable system prompt
+per feature.
+
+==============================================================================
+2. Configuration                                       *vim-chat-configuration*
+
+Configure via |vim.g.vim_chat| in your init.lua: >lua
+
+    vim.g.vim_chat = {
+      endpoint_url = "https://ai.drujensen.com/v1/chat/completions",
+      model = "qwen3.6",
+      api_key_env = "DRUJENSEN_API_KEY",
+      temperature = 0.2,
+      keymaps = true,
+      chat = {
+        system_prompt = "You are an expert pair programmer...",
+      },
+      completion = {
+        enabled = true,
+        debounce_ms = 400,
+        max_context_lines_before = 50,
+        max_context_lines_after = 20,
+      },
+    }
+<
+`api_key_env` names an environment variable read for the request's Bearer
+token. If it's unset (e.g. talking to a local Ollama instance that needs no
+auth), no Authorization header is sent at all.
+
+==============================================================================
+3. Commands                                                 *vim-chat-commands*
+
+                                                                     *:VimChat*
+:VimChat [prompt]       Opens the chat buffer. With {prompt}, appends it and
+                         sends immediately. With none, sends whatever text
+                         already follows the last `>>> user` marker.
+
+                                                                 *:VimChatStop*
+:VimChatStop             Cancels an in-flight chat or completion request.
+
+                                                     *:VimChatToggleCompletion*
+:VimChatToggleCompletion Toggles ghost-text completion on/off for the
+                         session.
+
+==============================================================================
+4. Keymaps                                                   *vim-chat-keymaps*
+
+Set by default unless `vim.g.vim_chat.keymaps = false`:
+
+    n,x  <leader>a   ":VimChat "  (type a prompt, Enter to send)
+    n,x  <leader>c   ":VimChat<CR>"  (continue the conversation)
+    i    <Tab>       accept the current ghost-text suggestion, or insert a
+                      literal tab if none is showing
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
