@@ -60,6 +60,13 @@ function M.get_chat_bufnr()
 end
 
 function M.open_chat_buffer()
+  -- If we're already inside a vimchat buffer (e.g. a saved .vimchat file the
+  -- user opened), use it directly rather than creating the scratch buffer.
+  local cur = vim.api.nvim_get_current_buf()
+  if vim.bo[cur].filetype == "vimchat" then
+    return cur
+  end
+
   local bufnr = M.get_chat_bufnr()
   local opts = config.get()
 
@@ -81,7 +88,7 @@ function M.open_chat_buffer()
   bufnr = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_name(bufnr, BUFFER_NAME)
   vim.bo[bufnr].buftype = "nofile"
-  vim.bo[bufnr].bufhidden = "hide"
+  vim.bo[bufnr].bufhidden = "wipe"
   vim.bo[bufnr].swapfile = false
   vim.bo[bufnr].filetype = "vimchat"
 
