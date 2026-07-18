@@ -126,7 +126,7 @@ function M.send_message()
     return
   end
 
-  buf_append(bufnr, "\n<<< assistant\n\n")
+  buf_append(bufnr, "\n\n<<< assistant\n\n")
   vim.cmd("redraw")
 
   job = endpoint.request(
